@@ -50,10 +50,10 @@
 /////////////////////////////////////////////////////////
 usint NUM_ITERS_DEF(10);
 usint WRITE_EVERY(10);
-bool WITH_BT_DEF(true);
+bool WITH_BT_DEF(false); // Bootstrapping not implemented for BFVRNS
 int ROWS_TO_READ_DEF(-1);   //Note this is to verify zero padding
-std::string TRAIN_X_FILE_DEF = "train_data/X_norm_64.csv";
-std::string TRAIN_Y_FILE_DEF = "train_data/y_64.csv";
+std::string TRAIN_X_FILE_DEF = "train_data/X_norm_1024.csv";
+std::string TRAIN_Y_FILE_DEF = "train_data/y_1024.csv";
 std::string TEST_X_FILE_DEF = "train_data/X_norm.csv";
 std::string TEST_Y_FILE_DEF = "train_data/y.csv";
 uint32_t RING_DIM_DEF(1 << 17);
