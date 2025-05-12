@@ -41,6 +41,10 @@ typedef double prim_type; //do we really need this still? Ideally it is so code 
 typedef std::vector<prim_type> Vec;
 typedef std::vector<std::vector<prim_type>> Mat;
 
+// Int
+typedef std::vector<int64_t> VecInt;
+typedef std::vector<std::vector<int64_t>> MatInt;
+
 using CC = lbcrypto::CryptoContext<lbcrypto::DCRTPoly>; //crypto contexts
 using CT = lbcrypto::Ciphertext<lbcrypto::DCRTPoly>; //ciphertext
 using PT = lbcrypto::Plaintext; //plaintext

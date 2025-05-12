@@ -1,3 +1,20 @@
+### Fork note
+
+Forked from [openfhe-logreg-training-examples](https://github.com/openfheorg/openfhe-logreg-training-examples)  
+Added BFVRNS implementation for `lr_nag` 
+
+`lr_nag_bfv.cpp`:  
+  - params: `uint64_t ptm`, `int64_t scale` (good acc at 1000000)
+- Modified file: `lr_types.h` -> Added types `VecInt`, `MatInt`
+- Added file: `lr_train_funcs_int.h/cpp`, `utils_int.h/cpp` 
+
+Negative Point
+ReEncryptScaleDown will be called mid calculations to scale down
+Inside EncLogRegCalculateGradient
+Matrix multiplications with 2 scaled matrices will lead to S^2 3 times -> upto S^8
+After first epoch for Theta calculations also S^2
+-> Up to Scale^16 with no scaling down, even a small chosen scale will exceed 2^64
+
 # Logistic Regression Training Examples using OpenFHE
 
 This repository provides examples of how to perform the training of logistic regression models on data encrypted by FHE using the OpenFHE library. This implementation is intended for demonstrations of how to use OpenFHE for model training.  The examples are intended to be used for illustrative purposes only, and not for benchmarking.  There are many much more efficient approaches to logistic regression training that either use [proprietary designs](https://dualitytech.com) or aren't as good for illustrative examples.  The specific approach we use here is based on [Nesterov-accelerated gradient descent](https://jlmelville.github.io/mize/nesterov.html).

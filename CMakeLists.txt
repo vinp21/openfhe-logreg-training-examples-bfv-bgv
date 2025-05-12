@@ -25,6 +25,7 @@ else ()
 endif ()
 
 add_executable(lr_nag lr_nag.cpp enc_matrix.cpp enc_matrix.h data_io.cpp data_io.h lr_types.h pt_matrix.cpp pt_matrix.h utils.cpp utils.h lr_train_funcs.cpp lr_train_funcs.h parameters.h)
+add_executable(lr_nag_bfv lr_nag_bfv.cpp enc_matrix.cpp enc_matrix.h data_io.cpp data_io.h lr_types.h pt_matrix.cpp pt_matrix.h utils_int.cpp utils_int.h lr_train_funcs_int.cpp lr_train_funcs_int.h parameters.h)
 add_executable(cheb_analysis cheb_analysis.cpp enc_matrix.cpp enc_matrix.h data_io.cpp data_io.h lr_types.h pt_matrix.cpp pt_matrix.h utils.cpp utils.h lr_train_funcs.cpp lr_train_funcs.h)
 
 # ADD src

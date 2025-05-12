@@ -31,7 +31,7 @@
 
 ///////////////////////////////////////////////////////////////////
 // support functions added by DBC
-#include "utils.h"
+#include "utils_int.h"
 #include "utils/debug.h"
 #include "parameters.h"
 
@@ -64,7 +64,7 @@ std::pair<usint, usint> ComputePaddedDimensions(const usint numRows, const usint
 }
 
 /////////////////////////////////
-Vec Mat2MatRowMajorVec(const Mat &inMat) {
+VecInt Mat2MatRowMajorVec(const MatInt &inMat) {
   //matrix row major { row 0, row 1, etc}
   //verified
   usint numRows = inMat.size();
@@ -72,7 +72,7 @@ Vec Mat2MatRowMajorVec(const Mat &inMat) {
   OPENFHE_DEBUG_FLAG(false);
   OPENFHE_DEBUGEXP(numRows);
   OPENFHE_DEBUGEXP(numCols);
-  Vec outVec;
+  VecInt outVec;
   //yes this is slow...
   for (usint i = 0; i < numRows; i++) {
     for (usint j = 0; j < numCols; j++) {
@@ -84,7 +84,7 @@ Vec Mat2MatRowMajorVec(const Mat &inMat) {
 }
 
 /////////////////////////////////
-Vec OneDMat2Vec(const Mat &inMat) {
+VecInt OneDMat2Vec(const MatInt &inMat) {
   //matrix row major { row 0, row 1, etc}
 
   OPENFHE_DEBUG_FLAG(false);
@@ -107,13 +107,13 @@ Vec OneDMat2Vec(const Mat &inMat) {
 
   //This function will unravel a Mat with a single row or column into a single vector
   //no zero padding
-  Vec outVec = Mat2MatRowMajorVec(inMat);
+  VecInt outVec = Mat2MatRowMajorVec(inMat);
   OPENFHE_DEBUGEXP(outVec.size());
   return outVec;
 }
 
 ///////////////////////////////////////////////////////////
-CT OneDMat2CtVCC(CC &cc, const Mat &inMat, const int rowSize, const int numSlots, const KeyPair &keys) {
+CT OneDMat2CtVCC(CC &cc, const MatInt &inMat, const int rowSize, const int numSlots, const KeyPair &keys) {
   //verifired
   OPENFHE_DEBUG_FLAG(false);
   OPENFHE_DEBUG("in OneDMat2CtVCC");
@@ -143,21 +143,21 @@ CT OneDMat2CtVCC(CC &cc, const Mat &inMat, const int rowSize, const int numSlots
   }
 
   // inVecCC is VEC_COL_CLONED (and zero padded)
-  Vec inVecCC;
-  GetVecColCloned<double>(inVec, numSlots, 0.0, inVecCC);
+  VecInt inVecCC;
+  GetVecColCloned<int64_t>(inVec, numSlots, 0.0, inVecCC);
   OPENFHE_DEBUG("after GetVecColCloned");
 //  if (dbg_flag) {
 //    PrintVecColCloned(inVecCC, colSize);
 //  }
   // make plaintext
-  PT inVecCCPT = cc->MakeCKKSPackedPlaintext(inVecCC); // encode cloned vector
+  PT inVecCCPT = cc->MakePackedPlaintext(inVecCC); // encode cloned vector
   //encrypt
   CT ctin = cc->Encrypt(keys.publicKey, inVecCCPT);
   return ctin;
 }
 
 //CT OneDMat2CtVRC(CC &cc, const Mat &inMat, const int rowSize, const int numSlots, const KeyPair &keys) {
-Vec cloneVecRc(const Mat &inMat, const int rowSize, const int numSlots){
+VecInt cloneVecRc(const MatInt &inMat, const int rowSize, const int numSlots){
 
   //verifired
   OPENFHE_DEBUG_FLAG(false);
@@ -189,25 +189,25 @@ Vec cloneVecRc(const Mat &inMat, const int rowSize, const int numSlots){
         std::string("Error: input vector non power of two"));
   }
 //   inVecRC is VEC_ROW_CLONED (and Zeropadded)
-  Vec inVecRC;
+VecInt inVecRC;
 
-  GetVecRowCloned<double>(inVec, numSlots, 0.0, inVecRC);
+  GetVecRowCloned<int64_t>(inVec, numSlots, 0.0, inVecRC);
 //  if (dbg_flag) {
 //    PrintVecRowCloned(inVecRC, rowSize); // note number of rows needed here.
 //  }
   return inVecRC;
 }
 
-CT collateOneDMats2CtVRC(CC &cc, const Mat &inMat, const Mat &inMat2, const int rowSize, const int numSlots, const KeyPair &keys) {
+CT collateOneDMats2CtVRC(CC &cc, const MatInt &inMat, const MatInt &inMat2, const int rowSize, const int numSlots, const KeyPair &keys) {
   if (inMat2.size() != inMat.size() || inMat2[0].size() != inMat[0].size()){
     OPENFHE_THROW(lbcrypto::config_error, __FILE__ + std::string(" ") + __FUNCTION__ + std::string(":") +
         std::to_string(__LINE__) +
         std::string("Error: 1D-Matrices to collate are not of the same size!"));
   }
 
-  Vec inVecRc = cloneVecRc(inMat, rowSize, numSlots);
-  Vec inVecRc2 = cloneVecRc(inMat2, rowSize, numSlots);
-  Vec collated(numSlots);
+  VecInt inVecRc = cloneVecRc(inMat, rowSize, numSlots);
+  VecInt inVecRc2 = cloneVecRc(inMat2, rowSize, numSlots);
+  VecInt collated(numSlots);
   for (auto i=0; i < numSlots; i++){
     if ((i / rowSize) % 2 == 0){
       collated[i] = inVecRc[i];
@@ -215,15 +215,16 @@ CT collateOneDMats2CtVRC(CC &cc, const Mat &inMat, const Mat &inMat2, const int 
       collated[i] = inVecRc2[i];
     }
   }
+
   // make plaintext
-  PT inVecRCPT = cc->MakeCKKSPackedPlaintext(collated);
+  PT inVecRCPT = cc->MakePackedPlaintext(collated);
   //encrypt
   CT ctin = cc->Encrypt(keys.publicKey, inVecRCPT);
   return ctin;
 }
 
 ///////////////////////////////////////////////////////////
-CT Mat2CtMRM(CC &cc, const Mat &inMat, const int rowSize, const int numSlots, const KeyPair &keys) {
+CT Mat2CtMRM(CC &cc, const MatInt &inMat, const int rowSize, const int numSlots, const KeyPair &keys) {
   // inMat is to be used in a MatrixVectorProductRow so needs to be encrypted as MAT_ROW_MAJOR nfp x nsp
   // inMat is currently a Mat: vector nrows long of vectors (ncol long)
   // so this storage requirement is differnt, instead of rowSize as a limit this packed with colSize as the width limit.
@@ -253,7 +254,7 @@ CT Mat2CtMRM(CC &cc, const Mat &inMat, const int rowSize, const int numSlots, co
   }
 
   //  copy matrix to a new array, zero padding rows and columns out to rowSize and columnSize
-  Vec inRMZP(numSlots, 0.0); //row major zero padded Note full vector created set to zeros
+  VecInt inRMZP(numSlots, 0.0); //row major zero padded Note full vector created set to zeros
 
   auto k = 0; //index into vector to write
   auto i = 0;
@@ -282,24 +283,43 @@ CT Mat2CtMRM(CC &cc, const Mat &inMat, const int rowSize, const int numSlots, co
 //  if (dbg_flag) {
 //    PrintMatRowMajor(inRMZP, numCols);  //need to verify
 //  }
-  PT inPT = cc->MakeCKKSPackedPlaintext(inRMZP); // encode inPT plaintext matrix
+  PT inPT = cc->MakePackedPlaintext(inRMZP); // encode inPT plaintext matrix
   auto ctin = cc->Encrypt(keys.publicKey, inPT); //ciphertext in
   return ctin;
+}
+
+// Function to convert a Mat to MatInt with scaling
+MatInt ConvertMatToMatInt(const Mat &input, int64_t scale) {
+  MatInt output(input.size());
+
+  usint numRows = input.size();
+  usint numCols = input[0].size();
+
+  for (usint i = 0; i < numRows; i++) {
+    VecInt Row(numCols);
+    for (usint j = 0; j < numCols; j++) {
+      Row[j] = input[i][j] * scale;
+    }
+    output[i] = Row;
+  }
+
+  return output;
 }
 
 void populateData(
     Parameters &params,
     CC &cc,
     KeyPair &keys,
-    Mat &NegXt,
-    Mat &beta,
-    Mat &X,
-    Mat &y,
-    Mat &testX,
-    Mat &testY,
+    MatInt &NegXt,
+    MatInt &beta,
+    MatInt &X,
+    MatInt &y,
+    MatInt &testX,
+    MatInt &testY,
     PT &ptExtractThetaMask,
     PT &ptExtractPhiMask,
-    float lrGamma
+    float lrGamma,
+    int scale
     ){
 
   usint numSlots = cc->GetEncodingParams()->GetBatchSize();
@@ -316,12 +336,24 @@ void populateData(
   std::vector<std::string> featureNames;
   std::vector<std::string> labelNames;
 
+  // Read from files as normal Mat
+  Mat X_in;
+  Mat testX_in;
+  Mat y_in;
+  Mat testY_in;
+
   bool normalizeFlag(false); //should this be a command line parameter?
-  LoadDataFile(params.trainXFile, X, featureNames, params.rowsToRead, normalizeFlag);
-  LoadDataFile(params.testXFile, testX, featureNames, params.rowsToRead, normalizeFlag);
+  LoadDataFile(params.trainXFile, X_in, featureNames, params.rowsToRead, normalizeFlag);
+  LoadDataFile(params.testXFile, testX_in, featureNames, params.rowsToRead, normalizeFlag);
   // We never normalize the labels.
-  LoadDataFile(params.trainYFile, y, labelNames, params.rowsToRead, false);
-  LoadDataFile(params.testYFile, testY, labelNames, params.rowsToRead, false);
+  LoadDataFile(params.trainYFile, y_in, labelNames, params.rowsToRead, false);
+  LoadDataFile(params.testYFile, testY_in, labelNames, params.rowsToRead, false);
+
+  // Convert to MatInt with scaling
+  X = ConvertMatToMatInt(X_in, scale);
+  testX = ConvertMatToMatInt(testX_in, scale);
+  y = ConvertMatToMatInt(y_in, scale);
+  testY = ConvertMatToMatInt(testY_in, scale);
 
   //determine dimensions for matrix encryptions
   usint originalNumSamp = X.size();     //n_samp
@@ -406,11 +438,11 @@ void populateData(
   // both use the same packing.
 
   // - Weight vector beta n_features x 1 (col vector)
-  beta = Mat(originalNumFeat, Vec(1, 0.0));
+  beta = MatInt(originalNumFeat, VecInt(1, 0));
 
   {
-    Vec thetaMask = Vec(numSlots, 0);
-    Vec phiMask = Vec(numSlots, 0);
+    VecInt thetaMask(numSlots,0);
+    VecInt phiMask(numSlots,0);
     for (usint i = 0; i < numSlots; i++) {
       if ((i / rowSize) % 2 == 0) {
         thetaMask[i] = 1;
@@ -418,8 +450,8 @@ void populateData(
         phiMask[i] = 1;
       }
     }
-    ptExtractThetaMask = cc->MakeCKKSPackedPlaintext(thetaMask);
-    ptExtractPhiMask = cc->MakeCKKSPackedPlaintext(phiMask);
+    ptExtractThetaMask = cc->MakePackedPlaintext(thetaMask);
+    ptExtractPhiMask = cc->MakePackedPlaintext(phiMask);
   }
   NegXt = InitializeLogReg(X, y, lrGamma / y.size());
 
@@ -454,11 +486,11 @@ void PrintVecRowCloned(const Vec &z, const int rowSize) {
 
 }
 
-void PrintVecColCloned(const Vec &z, const int rowSize) {
+void PrintVecColCloned(const VecInt &z, const int rowSize) {
   OPENFHE_DEBUG_FLAG(false);
   OPENFHE_DEBUG("in PrintVecColCloned");
   OPENFHE_DEBUGEXP(rowSize);
-  Vec firstSet;
+  VecInt firstSet;
   for (auto i = 0U; i < z.size(); i += rowSize) {
     firstSet.push_back(z[i]);
   }
@@ -488,7 +520,7 @@ void PrintVecColCloned(const Vec &z, const int rowSize) {
   }
 }
 
-void PrintMatRowMajor(const Vec &z, const int rowSize) {
+void PrintMatRowMajor(const VecInt &z, const int rowSize) {
   for (auto i = 0U; i < z.size(); i += rowSize) {
     std::cout << "row " << i << ": [";
     for (auto j = 0; j < rowSize; j++) {
